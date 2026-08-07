@@ -7,7 +7,7 @@ class Turn(Base):
     __tablename__ = "turns"
 
     turn_id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    session_id = Column(String(36), ForeignKey("pitch_sessions.session_id", ondelete="CASCADE"), nullable=False)
+    session_id = Column(String(36), ForeignKey("pitch_sessions.session_id", ondelete="CASCADE"), nullable=False, index=True)
     round_number = Column(Integer, nullable=False)
     persona = Column(Enum("Skeptic", "Growth", "Product", name="persona_type"), nullable=False)
     question_text = Column(Text, nullable=False)
@@ -19,3 +19,4 @@ class Turn(Base):
     created_at = Column(DateTime, server_default=func.now())
 
     session = relationship("PitchSession", back_populates="turns")
+    fact_checks = relationship("FactCheck", back_populates="turn", cascade="all, delete-orphan")
