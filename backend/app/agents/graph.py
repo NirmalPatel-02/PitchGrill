@@ -28,10 +28,7 @@ class PitchAgentState(TypedDict):
     claim_text: Optional[str]
     search_query: Optional[str]
     fact_check_result: Optional[Dict[str, Any]]
-
     eval_scores: Optional[Dict[str, Any]]
-
-    # TESTING ONLY - see module docstring. Replaced by DB reads later.
     transcript: List[Dict[str, Any]]
     final_report: Optional[Dict[str, Any]]
 
@@ -59,6 +56,16 @@ class SessionReport(BaseModel):
     concerns: List[str] = Field(..., description="2-4 short, specific concerns the panel actually observed.")
     would_invest: Literal["yes", "no", "maybe"] = Field(..., description="The panel's overall verdict, forced choice.")
 
+def invoke_structured_with_retry(structured_llm, prompt: str, fallback: BaseModel):
+    try:
+        return structured_llm.invoke(prompt)
+    except Exception as e:
+        print(f"[structured output retry] first attempt failed: {e}")
+        try:
+            return structured_llm.invoke(prompt)
+        except Exception as e2:
+            print(f"[structured output retry] second attempt failed, using fallback: {e2}")
+            return fallback
 
 @traceable(name="Tavily tool")
 def search_web(query: str) -> str:
@@ -236,7 +243,9 @@ CLAIM_PROMPT = PromptTemplate(
 @traceable(name="Claim Detector")
 def claim_detector_node(state: PitchAgentState) -> dict:
     prompt = CLAIM_PROMPT.format(question=state["question_text"], answer=state["human_answer"])
-    result: ClaimCheck = claim_llm.invoke(prompt)
+    result: ClaimCheck = invoke_structured_with_retry(
+        claim_llm, prompt, ClaimCheck(claim_found=False, claim_text=None, search_query=None)
+    )
     return {
         "claim_found": result.claim_found,
         "claim_text": result.claim_text,
@@ -265,7 +274,9 @@ VERDICT_PROMPT = PromptTemplate(
 def fact_check_node(state: PitchAgentState) -> dict:
     search_results = search_web(state["search_query"])
     prompt = VERDICT_PROMPT.format(claim_text=state["claim_text"], search_results=search_results)
-    result: FactCheckVerdict = verdict_llm.invoke(prompt)
+    result: FactCheckVerdict = invoke_structured_with_retry(
+        verdict_llm, prompt, FactCheckVerdict(verdict="unverifiable", explanation="Could not complete verification due to a model error.")
+    )
 
     return {
         "fact_check_result": {
@@ -310,7 +321,9 @@ def answer_evaluator_node(state: PitchAgentState) -> dict:
         fact_check_summary=fact_check_summary,
     )
 
-    result: EvalScore = eval_llm.invoke(prompt)
+    result: EvalScore = invoke_structured_with_retry(
+        eval_llm, prompt, EvalScore(specificity=3, evidence=3, clarity=3, red_flags=["Scoring failed — default score applied."])
+    )
 
     eval_scores = {
         "specificity": result.specificity,
@@ -381,8 +394,11 @@ def session_report_node(state: PitchAgentState) -> dict:
         full_transcript=_format_full_transcript(state["transcript"]),
         fact_check_log=_format_fact_check_log(state["transcript"]),
     )
-    result: SessionReport = report_llm.invoke(prompt)
-
+    result: SessionReport = invoke_structured_with_retry(
+        report_llm, prompt,
+        SessionReport(panel_verdict="The panel's evaluation could not be generated due to a technical issue.",
+                    strengths=[], concerns=["Report generation failed."], would_invest="maybe")
+    )
     scores = [t["eval_scores"] for t in state["transcript"]]
     n = len(scores) or 1
     avg_specificity = round(sum(s["specificity"] for s in scores) / n, 2)

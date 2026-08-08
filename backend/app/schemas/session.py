@@ -2,7 +2,7 @@ from pydantic import BaseModel , Field
 from typing import Optional, List, Any , Literal 
 from datetime import datetime
 
-Sector = Literal["SaaS", "Marketplace", "D2C", "Fintech", "Healthtech", "Hardware", "Other"]
+Sector = Literal["SaaS", "Marketplace", "D2C", "Fintech","B2B" ,"Healthtech", "Hardware", "Other"]
 Stage = Literal["Idea", "MVP", "Early Revenue", "Growth"]
 
 class SessionCreate(BaseModel):

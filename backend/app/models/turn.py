@@ -17,4 +17,3 @@ class Turn(Base):
     created_at = Column(DateTime, server_default=func.now())
 
     session = relationship("PitchSession", back_populates="turns")
-    fact_checks = relationship("FactCheck", back_populates="turn", cascade="all, delete-orphan")
