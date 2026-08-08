@@ -8,6 +8,8 @@ import os
 import requests
 from app.agents.llm import question_check_llm, claim_eval_llm
 from langchain_core.prompts import PromptTemplate
+import sqlite3
+from langgraph.checkpoint.sqlite import SqliteSaver
 
 class PitchAgentState(TypedDict):
     session_id: str
@@ -26,13 +28,16 @@ class PitchAgentState(TypedDict):
     claim_text: Optional[str]
     search_query: Optional[str]
     fact_check_result: Optional[Dict[str, Any]]
+
     eval_scores: Optional[Dict[str, Any]]
+
+    # TESTING ONLY - see module docstring. Replaced by DB reads later.
     transcript: List[Dict[str, Any]]
     final_report: Optional[Dict[str, Any]]
 
 class ClaimCheck(BaseModel):
     claim_found: bool = Field(..., description="True only if the answer contains a specific, checkable factual claim "
-                          "(a number, statistic, or named comparison) - not an opinion or a vision statement.")
+                                          "(a number, statistic, or named comparison) - not an opinion or a vision statement.")
     claim_text: Optional[str] = Field(None, description="The exact checkable claim, paraphrased short. Null if claim_found is false.")
     search_query: Optional[str] = Field(None, description="A concise web search query that would verify this specific claim. Null if claim_found is false.")
 
@@ -228,7 +233,6 @@ CLAIM_PROMPT = PromptTemplate(
     input_variables=["question", "answer"],
 )
 
-
 @traceable(name="Claim Detector")
 def claim_detector_node(state: PitchAgentState) -> dict:
     prompt = CLAIM_PROMPT.format(question=state["question_text"], answer=state["human_answer"])
@@ -271,7 +275,6 @@ def fact_check_node(state: PitchAgentState) -> dict:
             "explanation": result.explanation,
         }
     }
-
 
 eval_llm = claim_eval_llm.with_structured_output(EvalScore)
 
@@ -349,6 +352,7 @@ REPORT_PROMPT = PromptTemplate(
     input_variables=["startup_name", "sector", "stage", "funding_ask", "equity_offered", "full_transcript", "fact_check_log"],
 )
 
+
 def _format_full_transcript(transcript: List[Dict[str, Any]]) -> str:
     lines = []
     for t in transcript:
@@ -364,6 +368,7 @@ def _format_fact_check_log(transcript: List[Dict[str, Any]]) -> str:
     if not checks:
         return "No claims were checked this session."
     return "\n".join(f"- \"{c['claim_text']}\" -> {c['verdict']}: {c['explanation']}" for c in checks)
+
 
 @traceable(name="Session Report")
 def session_report_node(state: PitchAgentState) -> dict:
@@ -396,6 +401,7 @@ def session_report_node(state: PitchAgentState) -> dict:
         "transcript": state["transcript"],
     }
     return {"final_report": final_report}
+
 
 
 builder = StateGraph(PitchAgentState)
@@ -435,50 +441,6 @@ builder.add_edge("fact_check_node", "answer_evaluator_node")
 builder.add_edge("answer_evaluator_node", "orchestrator_node")
 builder.add_edge("session_report_node", END)
 
-checkpointer = MemorySaver()
+_conn = sqlite3.connect("langgraph_checkpoints.db", check_same_thread=False)
+checkpointer = SqliteSaver(_conn)
 graph = builder.compile(checkpointer=checkpointer)
-
-def run_manual_test():
-    initial_state: PitchAgentState = {
-        "session_id": "test-session-1",
-        "startup_name": "Nudge",
-        "sector": "SaaS",
-        "stage": "Idea",
-        "funding_ask": 50000,
-        "equity_offered": 8,
-        "pitch_text": (
-            "Nudge is a Slack app that watches your team's calendar and "
-            "automatically reschedules low-priority meetings when someone's "
-            "workload spikes. We're pre-launch but have 40 people on a "
-            "waitlist from a Reddit post. The plan is a $12/user/month "
-            "subscription targeting mid-size remote teams."
-        ),
-        "round_number": 0,
-        "max_rounds": 6,
-        "current_persona": None,
-        "question_text": None,
-        "human_answer": None,
-        "claim_found": False,
-        "claim_text": None,
-        "search_query": None,
-        "fact_check_result": None,
-        "eval_scores": None,
-        "transcript": [],
-        "final_report": None,
-    }
-
-    config = {"configurable": {"thread_id": "manual-test-1"}}
-    result = graph.invoke(initial_state, config=config)
-
-    while "__interrupt__" in result:
-        interrupt_payload = result["__interrupt__"][0].value
-        print(f"\n[{interrupt_payload['persona']}] {interrupt_payload['question']}")
-        answer = input("Your answer: ")
-        result = graph.invoke(Command(resume=answer), config=config)
-
-    print("\n--- SESSION REPORT ---")
-    print(result["final_report"])
-
-
-if __name__ == "__main__":
-    run_manual_test()

@@ -2,3 +2,4 @@
 /backend/.env.example
 /backend/.venv
 /backend/uv.lock
+/backend/langgraph_checkpoints.db
