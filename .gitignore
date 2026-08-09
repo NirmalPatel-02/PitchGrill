@@ -3,3 +3,10 @@
 /backend/.venv
 /backend/uv.lock
 /backend/langgraph_checkpoints.db
+__pycache__/
+*.pyc
+.venv/
+*.db
+frontend/node_modules/
+frontend/dist/
+frontend/.env
