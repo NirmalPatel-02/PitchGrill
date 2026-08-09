@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from typing import TypedDict, Literal, List, Optional, Dict, Any
 from langsmith import traceable
 import os
+import random
 import requests
 from app.agents.llm import question_check_llm, claim_eval_llm
 from langchain_core.prompts import PromptTemplate
@@ -42,13 +43,11 @@ class FactCheckVerdict(BaseModel):
     verdict: Literal["confirmed", "refuted", "unverifiable"]
     explanation: str = Field(..., description="One or two sentences, referencing what the search actually found.")
 
-
 class EvalScore(BaseModel):
     specificity: int = Field(..., ge=1, le=5, description="1 = vague/generic, 5 = precise with real numbers.")
     evidence: int = Field(..., ge=1, le=5, description="1 = unsupported assertion, 5 = backed by data or a clear mechanism.")
     clarity: int = Field(..., ge=1, le=5, description="How clearly they communicated an actual answer. 1 = rambling, confusing, or a non-answer/dodge. 5 = direct and actually addresses the question. A grammatically smooth non-answer like 'I don't know' must score 1-2 - clean sentence structure is not the same as clarity of content.")
     red_flags: List[str] = Field(default_factory=list, description="Short phrases naming specific concerns. Empty list if none.")
-
 
 class SessionReport(BaseModel):
     panel_verdict: str = Field(..., description="3-5 sentences. The panel's overall closing take, referencing specific moments from the conversation.")
@@ -130,6 +129,42 @@ def route_from_orchestrator(state: PitchAgentState) -> Literal["persona_question
         return "session_report_node"
     return "persona_question_node"
 
+STYLE_OPENING = (
+    "This is your first question. In ONE short sentence, casually reflect what "
+    'their startup does back to them (e.g. "So you\'re building a SaaS tool for X, got it.") '
+    "— then ask your question. Total response: 2 sentences max, under 35 words."
+)
+
+STYLE_DIRECT = (
+    "Skip any reaction or acknowledgment. Just ask your question directly, like an "
+    "investor who's already moved on to the next thing. 1 sentence, under 25 words."
+)
+
+STYLE_CALLBACK_ANSWER = (
+    "In a short half-sentence, casually reference one specific detail from what they "
+    'just said (e.g. "So you\'re going with a LoRA setup, alright...") - then ask '
+    "your question. Total response: 2 sentences max, under 35 words. Don't summarize "
+    "their whole answer, just a quick nod to one detail."
+)
+
+STYLE_CALLBACK_FACTCHECK = (
+    "Briefly reference the flagged claim from the context below in a half-sentence to sound mildly "
+    "unconvinced but not hostile. Use the ACTUAL claim text provided, do not invent numbers. "
+    "- then ask your question. Total response: 2 sentences max, under 35 words. "
+    "Bring the claim back up if it is relevant to your question."
+)
+
+def _pick_style(round_number: int, has_flagged_claims: bool) -> str:
+    if round_number == 0:
+        return STYLE_OPENING
+    choices = [STYLE_DIRECT, STYLE_CALLBACK_ANSWER]
+    weights = [0.4, 0.6]
+    if has_flagged_claims:
+        choices.append(STYLE_CALLBACK_FACTCHECK)
+        weights = [0.3, 0.35, 0.35]
+    return random.choices(choices, weights=weights, k=1)[0]
+
+
 QUESTION_PROMPT = PromptTemplate(
     template="""You are an investor on a panel grilling a founder. Stay fully in character.
 
@@ -145,21 +180,20 @@ QUESTION_PROMPT = PromptTemplate(
 
     {fact_check_context}
 
-    Ask ONE question, in your persona's voice, one to three sentences.
-    - If there is no conversation yet, ask your opening question based on the pitch alone.
-    - If there is a previous answer, react to it directly ask a real follow-up, a
-    counter, or push on a weak point. Do not ask something generic that ignores
-    what was just said.
+    HOW TO RESPOND THIS TURN:
+    {style_instruction}
+
+    Hard rules:
+    - Talk like a real investor in a live meeting, not a written questionnaire —
+      casual, a little impatient, contractions are fine ("you're", "that's").
     - Never repeat a question already asked in the conversation above.
-    - Respond with ONLY the question itself. No preamble, no quotation marks,
-      no "Question:" prefix - just the sentence(s) you'd actually say out loud.""",
+    - Respond with ONLY what you'd say out loud. No preamble, no quotation marks, no labels.""",
     input_variables=[
         "persona", "persona_strategy", "startup_name", "sector", "stage",
         "funding_ask", "equity_offered", "pitch_text", "transcript_text",
-        "fact_check_context",
+        "fact_check_context", "style_instruction",
     ],
 )
-
 
 def _format_transcript(transcript: List[Dict[str, Any]]) -> str:
     if not transcript:
@@ -170,7 +204,6 @@ def _format_transcript(transcript: List[Dict[str, Any]]) -> str:
         if turn.get("answer"):
             lines.append(f"Founder: {turn['answer']}")
     return "\n".join(lines)
-
 
 @traceable(name="Persona Question")
 def persona_question_node(state: PitchAgentState) -> dict:
@@ -183,17 +216,16 @@ def persona_question_node(state: PitchAgentState) -> dict:
         t["fact_check"] for t in state["transcript"]
         if t.get("fact_check") and t["fact_check"]["verdict"] in ("refuted", "unverifiable")
     ]
+
+    style_instruction = _pick_style(state["round_number"], bool(flagged_claims))
     fact_check_context = ""
-    if flagged_claims:
+
+    if style_instruction == STYLE_CALLBACK_FACTCHECK:
         lines = [
             f'- "{fc["claim_text"]}" was {fc["verdict"]}: {fc["explanation"]}'
             for fc in flagged_claims
         ]
-        fact_check_context = (
-            "These claims from earlier in this conversation did NOT hold up to "
-            "fact-checking. Bring one back up if it's relevant to your question:\n"
-            + "\n".join(lines)
-        )
+        fact_check_context = "Flagged claim to bring up:\n" + "\n".join(lines)
 
     prompt = QUESTION_PROMPT.format(
         persona=persona,
@@ -206,6 +238,7 @@ def persona_question_node(state: PitchAgentState) -> dict:
         pitch_text=state["pitch_text"],
         transcript_text=_format_transcript(state["transcript"]),
         fact_check_context=fact_check_context,
+        style_instruction=style_instruction,
     )
 
     response = question_check_llm.invoke(prompt)
@@ -229,20 +262,24 @@ CLAIM_PROMPT = PromptTemplate(
     template="""Read this founder's answer to an investor's question.
     Question: {question}
     Answer: {answer}
-
+    Startup name if you need : {startup_name}
     Decide whether the answer contains a SPECIFIC, CHECKABLE factual claim -
     a concrete number, statistic, growth rate, market size, or a named
     comparison to a competitor. Opinions, vision statements, and vague
     descriptions ("we're growing fast") do NOT count.
 
     If it does contain a checkable claim, extract it and propose a short web
-    search query that would help verify it.""",
-    input_variables=["question", "answer"],
+    search query that would help verify it.
+    
+    Only extract a claim the founder is ASSERTING about their own company —
+    not a number they're referencing from the question itself in order to
+    explain or push back on it.""",
+    input_variables=["question", "answer", "startup_name"],
 )
 
 @traceable(name="Claim Detector")
 def claim_detector_node(state: PitchAgentState) -> dict:
-    prompt = CLAIM_PROMPT.format(question=state["question_text"], answer=state["human_answer"])
+    prompt = CLAIM_PROMPT.format(question=state["question_text"], answer=state["human_answer"], startup_name=state["startup_name"])
     result: ClaimCheck = invoke_structured_with_retry(
         claim_llm, prompt, ClaimCheck(claim_found=False, claim_text=None, search_query=None)
     )
@@ -263,12 +300,22 @@ VERDICT_PROMPT = PromptTemplate(
     Web search results:
     {search_results}
 
-    Based ONLY on these results, decide if the claim is confirmed, refuted, or
-    unverifiable (results don't clearly say either way). Explain briefly,
-    citing what the results actually said.""",
+    Decide the verdict carefully. these are two very different situations:
+
+    1. The results contain DIRECT evidence about this specific claim or company
+       (e.g. a report specifically about this company, or a documented fact
+       that directly contradicts this exact number) -> confirmed or refuted.
+
+    2. The results only contain GENERAL industry benchmarks, typical ranges,
+       or averages for this type of metric, with nothing specific to this
+       company -> unverifiable. A company's number falling outside a general
+       average is NOT evidence it's false. only direct evidence about this
+       specific claim can refute it. Default to unverifiable whenever your
+       search only returned generic/industry-wide information.
+
+    Explain briefly, citing what the results actually said.""",
     input_variables=["claim_text", "search_results"],
 )
-
 
 @traceable(name="Fact Check")
 def fact_check_node(state: PitchAgentState) -> dict:
@@ -365,7 +412,6 @@ REPORT_PROMPT = PromptTemplate(
     input_variables=["startup_name", "sector", "stage", "funding_ask", "equity_offered", "full_transcript", "fact_check_log"],
 )
 
-
 def _format_full_transcript(transcript: List[Dict[str, Any]]) -> str:
     lines = []
     for t in transcript:
@@ -375,13 +421,11 @@ def _format_full_transcript(transcript: List[Dict[str, Any]]) -> str:
         lines.append(f"(scored specificity={s['specificity']} evidence={s['evidence']} clarity={s['clarity']})")
     return "\n".join(lines)
 
-
 def _format_fact_check_log(transcript: List[Dict[str, Any]]) -> str:
     checks = [t["fact_check"] for t in transcript if t.get("fact_check")]
     if not checks:
         return "No claims were checked this session."
     return "\n".join(f"- \"{c['claim_text']}\" -> {c['verdict']}: {c['explanation']}" for c in checks)
-
 
 @traceable(name="Session Report")
 def session_report_node(state: PitchAgentState) -> dict:
@@ -417,7 +461,6 @@ def session_report_node(state: PitchAgentState) -> dict:
         "transcript": state["transcript"],
     }
     return {"final_report": final_report}
-
 
 
 builder = StateGraph(PitchAgentState)

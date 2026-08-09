@@ -71,3 +71,7 @@ class SessionRepository:
             session.status = "completed"
         db.add(report)
         db.commit()
+
+    @staticmethod
+    def count_for_user(db: Session, user_id: str) -> int:
+        return db.query(PitchSession).filter(PitchSession.user_id == user_id).count()

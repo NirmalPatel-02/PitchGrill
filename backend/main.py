@@ -1,3 +1,7 @@
+# Notice for coders
+# Hello, if anyone is using my code then this file is for testing graph only this dose not contribute in actual backend
+# also it use RAM persistent memory not db so it mad that way from my backend code
+
 from langgraph.graph import StateGraph, START, END
 from langgraph.types import interrupt, Command
 from langgraph.checkpoint.memory import MemorySaver

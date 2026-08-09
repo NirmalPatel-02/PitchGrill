@@ -13,14 +13,21 @@ class UserRepository:
         return db.query(User).filter(User.user_id == user_id).first()
 
     @staticmethod
-    def create(db: Session, email: str, password_hash: str,full_name: Optional[str] = None,company_name: Optional[str] = None) -> User:
+    def create(db: Session, email: str, password_hash: str, age: int,
+               full_name: Optional[str] = None, company_name: Optional[str] = None) -> User:
         user = User(
-            email=email, 
+            email=email,
             password_hash=password_hash,
+            age=age,
             full_name=full_name,
-            company_name=company_name
+            company_name=company_name,
         )
         db.add(user)
         db.commit()
         db.refresh(user)
         return user
+
+    @staticmethod
+    def mark_verified(db: Session, user_id: str) -> None:
+        db.query(User).filter(User.user_id == user_id).update({"is_verified": True})
+        db.commit()

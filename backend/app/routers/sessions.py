@@ -7,16 +7,16 @@ from app.routers.auth import get_current_user
 from app.schemas.session import SessionCreate, SessionResponse, SessionListItem, AnswerSubmit
 from app.repositories.session_repo import SessionRepository
 from app.agents.graph import graph, PitchAgentState
+from app.core.config import settings
 
 router = APIRouter(prefix="/sessions", tags=["Pitch Sessions"])
 
-
 @router.post("", response_model=SessionResponse, status_code=status.HTTP_201_CREATED)
-def create_session(
-    data: SessionCreate,
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
-):
+def create_session(data: SessionCreate, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    
+    if SessionRepository.count_for_user(db, current_user.user_id) >= settings.MAX_SESSIONS_PER_USER:
+        raise HTTPException(status_code=403, detail=f"Limit of {settings.MAX_SESSIONS_PER_USER} sessions per account reached.")
+
     db_session = SessionRepository.create(db, user_id=current_user.user_id, data=data)
 
     initial_state: PitchAgentState = {
@@ -110,7 +110,6 @@ def submit_answer(
 
     db.refresh(session)
     return session
-
 
 @router.get("/{session_id}", response_model=SessionResponse)
 def get_session(
