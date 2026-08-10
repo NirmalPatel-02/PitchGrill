@@ -360,18 +360,30 @@ export default function GrillPage() {
           .dock-row {
             display: flex;
             gap: 10px;
-            align-items: flex-end;
+            align-items: center;
           }
           .dock-textarea {
             flex: 1;
-            min-height: 52px;
-            max-height: 140px;
+            min-height: 44px; /* Reduced from 52px */
+            height: 44px;
+            max-height: 120px;
+            resize: none; /* Prevents awkward dragging handle */
+            padding: 10px 14px;
+            border-radius: var(--radius-md, 8px);
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            color: var(--color-text);
+            outline: none;
+          }
+          .dock-textarea:focus {
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 2px var(--color-accent-soft, rgba(235, 170, 50, 0.2));
           }
           .dock-mic,
           .dock-send {
             flex-shrink: 0;
-            width: 48px;
-            height: 48px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
             border: 1px solid var(--color-border-strong);
             background: var(--color-surface);
