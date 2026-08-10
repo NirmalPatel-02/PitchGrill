@@ -131,8 +131,8 @@ def route_from_orchestrator(state: PitchAgentState) -> Literal["persona_question
 
 STYLE_OPENING = (
     "This is your first question. In ONE short sentence, casually reflect what "
-    'their startup does back to them (e.g. "So you\'re building a SaaS tool for X, got it.") '
-    "— then ask your question. Total response: 2 sentences max, under 35 words."
+    "their startup does back to them based on their pitch then ask your question. "
+    "Total response: 2 sentences max, under 35 words."
 )
 
 STYLE_DIRECT = (
@@ -141,10 +141,9 @@ STYLE_DIRECT = (
 )
 
 STYLE_CALLBACK_ANSWER = (
-    "In a short half-sentence, casually reference one specific detail from what they "
-    'just said (e.g. "So you\'re going with a LoRA setup, alright...") - then ask '
-    "your question. Total response: 2 sentences max, under 35 words. Don't summarize "
-    "their whole answer, just a quick nod to one detail."
+    "In a short phrase or half-sentence, casually acknowledge one specific technical or business "
+    "detail from the founder's LAST answer then ask your question. "
+    "Total response: 2 sentences max, under 35 words. Do not make up facts or terms not mentioned by the founder."
 )
 
 STYLE_CALLBACK_FACTCHECK = (
@@ -313,6 +312,17 @@ VERDICT_PROMPT = PromptTemplate(
        specific claim can refute it. Default to unverifiable whenever your
        search only returned generic/industry-wide information.
 
+    3. UNIT & NUMBER CONVERSIONS (CRITICAL):
+        - 1 Crore = 10 Million. (e.g., 22.9 Crore = 229 Million).
+        - 1 Lakh = 100,000.
+        - 1 Billion = 1,000 Million = 100 Crore.
+        Always convert numbers to the same unit before comparing!
+
+    4. ESTIMATION VS REFUTATION:
+        - Founder pitches often use slightly outdated or rounded estimates. 
+        - If a search result shows a close figure (e.g., search says 210M vs founder's 22.9 Crore / 229M), mark it as "confirmed" or "unverifiable" with a minor note, NOT "refuted".
+        - Only mark as "refuted" if there is a DIRECT, SIGNIFICANT contradiction (e.g., claim i
+
     Explain briefly, citing what the results actually said.""",
     input_variables=["claim_text", "search_results"],
 )
@@ -346,7 +356,7 @@ EVAL_PROMPT = PromptTemplate(
     specificity (1-5): does it give real numbers/specifics, or is it vague?
     evidence (1-5): is it backed by data or a clear mechanism, or just asserted?
     clarity (1-5): does it directly and clearly address the question? A short,
-    grammatically clean dodge or "I don't know" is NOT clear — score it 1-2,
+    grammatically clean dodge or "I don't know" is NOT clear  score it 1-2,
     since it communicates no actual answer. Only score high if the founder
     actually explains something.
     red_flags: list anything concerning (e.g. dodged the question, contradicts
