@@ -44,7 +44,7 @@ export default function Navbar() {
   return (
     <nav className="sidebar">
       <div className="brand">
-        <span className="brand-mark">PG</span>
+        <img src="/PitchGrill.svg" alt="PitchGrill Logo" className="auth-brand-logo" />
         <span className="brand-name">PitchGrill</span>
       </div>
 
@@ -92,6 +92,12 @@ export default function Navbar() {
           padding: 22px 16px;
           position: sticky;
           top: 0;
+        }
+        .auth-brand-logo {
+          width: 28px;
+          height: 28px;
+          object-fit: contain;
+          display: block;
         }
         .brand {
           display: flex;

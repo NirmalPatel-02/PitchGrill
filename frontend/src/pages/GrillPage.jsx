@@ -425,7 +425,11 @@ export default function GrillPage() {
       <div className="page-shell">
         {loadError && <div className="banner banner-error">{loadError}</div>}
 
-        {stage === 'checking' && <p style={{ color: 'var(--color-text-muted)' }}>Loading…</p>}
+        {stage === 'checking' && (
+          <div style={{ display: 'grid', placeItems: 'center', minHeight: '50vh', color: 'var(--color-text-muted)' }}>
+            <p>Loading…</p>
+          </div>
+        )}
 
         {stage === 'ready' && (
           <>

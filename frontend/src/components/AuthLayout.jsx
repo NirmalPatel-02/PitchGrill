@@ -4,7 +4,7 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
       <div className="auth-glow" />
       <div className="auth-card">
         <div className="auth-brand">
-          <span className="auth-brand-mark">PG</span>
+          <img src="/PitchGrill.svg" alt="PitchGrill Logo" className="auth-brand-logo" />
           <span>PitchGrill</span>
         </div>
         <h1 className="auth-title">{title}</h1>
@@ -14,6 +14,12 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
       </div>
 
       <style>{`
+        .auth-brand-logo {
+          width: 28px;
+          height: 28px;
+          object-fit: contain;
+          display: block;
+        }
         .auth-screen {
           min-height: 100vh;
           display: grid;
