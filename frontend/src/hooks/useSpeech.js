@@ -8,6 +8,7 @@ export function useSpeech() {
   const [isListening, setIsListening] = useState(false);
   const [micLevel, setMicLevel] = useState(0);
   const [transcript, setTranscript] = useState('');
+  const [sttError, setSttError] = useState('');
 
   const recognitionRef = useRef(null);
   const audioCtxRef = useRef(null);
@@ -84,7 +85,7 @@ export function useSpeech() {
       analyserRef.current = analyser;
       meterLoop();
     } catch {
- 
+     
     }
   }
 
@@ -99,6 +100,7 @@ export function useSpeech() {
   const startListening = useCallback(() => {
     if (!sttSupported) return;
     setTranscript('');
+    setSttError('');
     startMeter();
 
     const recognition = new SpeechRecognitionAPI();
@@ -113,7 +115,9 @@ export function useSpeech() {
       }
       setTranscript(combined);
     };
-    recognition.onerror = () => {
+    recognition.onerror = (event) => {
+
+      setSttError(event.error || 'unknown');
       setIsListening(false);
       stopMeter();
     };
@@ -157,5 +161,6 @@ export function useSpeech() {
     micLevel,
     transcript,
     resetTranscript,
+    sttError,
   };
 }

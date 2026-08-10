@@ -57,7 +57,6 @@ export default function GrillPage() {
 
   useEffect(() => {
     loadSessions();
-    
   }, []);
 
   useEffect(() => {
@@ -78,7 +77,6 @@ export default function GrillPage() {
     }
   }
 
-
   function askQuestion(text) {
     setCurrentQuestion(text);
     setAnswerText('');
@@ -96,7 +94,6 @@ export default function GrillPage() {
   const displayedQuestion =
     questionPending && speech.isSpeaking ? currentQuestion.slice(0, speech.spokenCharIndex) : currentQuestion;
   const canAnswer = !questionPending && !submittingAnswer;
-
 
   async function handleResume() {
     setLoadError('');
@@ -117,7 +114,7 @@ export default function GrillPage() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.getTracks().forEach((t) => t.stop());
     } catch {
-    
+     
     } finally {
       setPermissionChecking(false);
       setStage('form');
@@ -145,7 +142,7 @@ export default function GrillPage() {
     const pitchLen = form.pitch_text.trim().length;
     if (pitchLen === 0) next.pitch_text = 'Describe your pitch. the panel needs something to grill.';
     else if (pitchLen < PITCH_MIN_LENGTH)
-      next.pitch_text = `Give a bit more detail - at least ${PITCH_MIN_LENGTH} characters.`;
+      next.pitch_text = `Give a bit more detail. at least ${PITCH_MIN_LENGTH} characters.`;
 
     setFormErrors(next);
     return Object.keys(next).length === 0;
@@ -194,7 +191,7 @@ export default function GrillPage() {
     if (!canAnswer || submittingAnswer) return;
     const trimmed = answerText.trim();
     if (trimmed.length < ANSWER_MIN_LENGTH) {
-      setAnswerError(`Give a fuller answer - at least ${ANSWER_MIN_LENGTH} characters.`);
+      setAnswerError(`Give a fuller answer. at least ${ANSWER_MIN_LENGTH} characters.`);
       return;
     }
     if (speech.isListening) speech.stopListening();
@@ -226,8 +223,6 @@ export default function GrillPage() {
     }
   }
 
-
-
   if (stage === 'session' && currentSession) {
     const roundLabel = `Round ${currentSession.current_round + 1} of ${currentSession.max_rounds}`;
     const progressPct = (currentSession.current_round / currentSession.max_rounds) * 100;
@@ -256,6 +251,11 @@ export default function GrillPage() {
 
         <div className="stage-input-dock">
           {answerError && <div className="banner banner-error" style={{ marginBottom: 12 }}>{answerError}</div>}
+          {speech.sttError && (
+            <div className="banner banner-notice" style={{ marginBottom: 12 }}>
+              Voice input isn't working in this browser (common in Brave, sometimes Edge) try Chrome, or just type your answer below.
+            </div>
+          )}
           <div className="dock-row">
             <textarea
               className="textarea dock-textarea"
@@ -478,9 +478,9 @@ export default function GrillPage() {
             <div className="modal-card">
               <h2 className="modal-title">Before you start</h2>
               <p className="modal-text">
-                This is a demo project, not a real fundraising tool. You get <b> 2 pitch sessions per account </b>, so make
-                them count. <b>Answer as clearly and specifically as you would in a real pitch. the panel grades and
-                fact-checks what you actually say</b>. You can leave and come back anytime; your session picks up right
+                This is a demo project, not a real fundraising tool. You get 2 pitch sessions per account, so make
+                them count. Answer as clearly and specifically as you would in a real pitch. the panel grades and
+                fact-checks what you actually say. You can leave and come back anytime; your session picks up right
                 where you left off.
               </p>
               <div className="modal-actions">
@@ -517,7 +517,7 @@ export default function GrillPage() {
         {stage === 'form' && (
           <>
             <h1 className="page-title">Pitch your idea</h1>
-            <p className="page-subtitle">Give the panel the basics - they'll dig into the rest live.</p>
+            <p className="page-subtitle">Give the panel the basics. they'll dig into the rest live.</p>
 
             {formApiError && <div className="banner banner-error">{formApiError}</div>}
 

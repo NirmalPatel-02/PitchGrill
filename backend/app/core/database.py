@@ -5,6 +5,7 @@ from app.core.config import settings
 
 engine = create_engine(
     settings.DATABASE_URL,
+    connect_args=settings.DB_CONNECT_ARGS,
     pool_pre_ping=True,  
     pool_recycle=3600,
 )
