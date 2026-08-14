@@ -22,19 +22,19 @@ export function useSpeech() {
   const speak = useCallback(
     (text, { onEnd } = {}) => {
       if (!ttsSupported) {
+        setSpokenCharIndex(0);
         onEnd?.();
         return;
       }
       window.speechSynthesis.cancel();
+      setSpokenCharIndex(0); 
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 0.98;
       utterance.pitch = 1;
 
       utterance.onstart = () => {
         setIsSpeaking(true);
-        setSpokenCharIndex(0);
       };
-
       utterance.onboundary = (event) => {
         setSpokenCharIndex(event.charIndex ?? 0);
       };

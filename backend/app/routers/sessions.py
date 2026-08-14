@@ -32,6 +32,8 @@ def create_session(data: SessionCreate, db: Session = Depends(get_db), current_u
         "current_persona": None,
         "question_text": None,
         "human_answer": None,
+        "guardrail_blocked": False,
+        "guardrail_reason": None,
         "claim_found": False,
         "claim_text": None,
         "search_query": None,

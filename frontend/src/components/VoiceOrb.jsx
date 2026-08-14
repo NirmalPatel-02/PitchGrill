@@ -1,17 +1,25 @@
 // state: 'idle' | 'speaking' | 'listening' | 'thinking'
 // micLevel: 0-1, only used in 'listening' state, drives real-time scale
-export default function VoiceOrb({ state = 'idle', micLevel = 0 }) {
+export default function VoiceOrb({ state = "idle", micLevel = 0 }) {
   const listenScale = 1 + micLevel * 0.35;
 
   return (
     <div className={`orb-wrap orb-${state}`}>
       <div
         className="orb-ring orb-ring-outer"
-        style={state === 'listening' ? { transform: `scale(${listenScale})` } : undefined}
+        style={
+          state === "listening"
+            ? { transform: `scale(${listenScale})` }
+            : undefined
+        }
       />
       <div
         className="orb-ring orb-ring-mid"
-        style={state === 'listening' ? { transform: `scale(${1 + micLevel * 0.22})` } : undefined}
+        style={
+          state === "listening"
+            ? { transform: `scale(${1 + micLevel * 0.22})` }
+            : undefined
+        }
       />
       <div className="orb-core" />
 
@@ -98,6 +106,17 @@ export default function VoiceOrb({ state = 'idle', micLevel = 0 }) {
         @keyframes orb-think {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .orb-speaking .orb-core,
+          .orb-speaking .orb-ring-outer,
+          .orb-speaking .orb-ring-mid,
+          .orb-thinking .orb-core,
+          .orb-idle .orb-core,
+          .orb-idle .orb-ring-outer,
+          .orb-idle .orb-ring-mid {
+            animation-duration: 0.85s !important;
+          }
         }
       `}</style>
     </div>

@@ -48,16 +48,14 @@ export default function Navbar() {
         <span className="brand-name">PitchGrill</span>
       </div>
 
-      <div className="nav-links">
-        <NavLink to="/grill" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-          <FlameIcon />
-          Grill
-        </NavLink>
-        <NavLink to="/history" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-          <HistoryIcon />
-          History
-        </NavLink>
-      </div>
+      <NavLink to="/grill" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+        <FlameIcon />
+        <span>Grill</span>
+      </NavLink>
+      <NavLink to="/history" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+        <HistoryIcon />
+        <span>History</span>
+      </NavLink>
 
       <div className="sidebar-bottom">
         <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
@@ -224,6 +222,53 @@ export default function Navbar() {
         .logout-btn:hover {
           color: var(--color-danger);
           background: var(--color-danger-soft);
+        }
+        @media (max-width: 768px) {
+          .sidebar {
+            width: 64px;
+            padding: 16px 8px;
+            align-items: center;
+          }
+
+          /* Hide textual labels on mobile screens */
+          .brand-name,
+          .nav-link span,
+          .profile-info,
+          .theme-toggle {
+            display: none;
+          }
+
+          /* Center link icons */
+          .nav-links {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          }
+
+          .nav-link {
+            justify-content: center;
+            padding: 10px;
+            width: 44px;
+            height: 44px;
+          }
+
+          /* Center theme toggle & profile row */
+          .sidebar-bottom {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          }
+
+          .profile-row {
+            justify-content: center;
+            padding: 0;
+          }
+
+          .logout-btn {
+            display: none; /* Hide extra logout text/button or adjust as icon */
+          }
         }
       `}</style>
     </nav>

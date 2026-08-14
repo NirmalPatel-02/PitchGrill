@@ -91,8 +91,9 @@ export default function GrillPage() {
     });
   }
 
-  const displayedQuestion =
-    questionPending && speech.isSpeaking ? currentQuestion.slice(0, speech.spokenCharIndex) : currentQuestion;
+  const displayedQuestion = questionPending
+    ? currentQuestion.slice(0, speech.spokenCharIndex)
+    : currentQuestion;  
   const canAnswer = !questionPending && !submittingAnswer;
 
   async function handleResume() {
@@ -452,9 +453,9 @@ export default function GrillPage() {
               <div className="ready-card">
                 <p className="ready-card-eyebrow">In progress</p>
                 <h2 className="ready-card-title">{activeSession.startup_name}</h2>
-                <p className="ready-card-meta mono">
+                {/* <p className="ready-card-meta mono">
                   Round {activeSession.current_round + 1} of {activeSession.max_rounds}
-                </p>
+                </p> */}
                 <button className="btn btn-primary" onClick={handleResume} style={{ marginTop: 16 }}>
                   Resume session
                 </button>
