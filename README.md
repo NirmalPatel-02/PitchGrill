@@ -1,14 +1,13 @@
 <div align="center">
 
-# 🔥 PitchGrill
+# 🔥 PitchGrill 
 
 ### An AI Investor Panel That Grills Your Pitch and Fact-Checks You Live
 
-PitchGrill is a multi-persona agentic system where you pitch a startup idea and get grilled by three distinct AI investor personas in real time. They ask genuine follow-up questions based on what you actually said, verify your factual claims against live web search, and score your answers against a structured rubric  closing with a panel verdict you can put in front of anyone.
+PitchGrill is a multi-persona agentic system where you pitch a startup idea and get grilled by three distinct AI investor personas in real time. They ask genuine follow-up questions based on what you actually said, verify your factual claims against live web search, and score your answers against a structured rubric closing with a panel verdict you can put in front of anyone.
 
-[**🚀 Live Demo**](#) · [**🎥 Demo Video**](#) · [**📄 Report a Bug**](#)
+[**🚀 Live Demo**](https://pitchgrill.netlify.app/) · [**🎥 Demo Video**](#) · [**📄 Report a Bug**](https://github.com/NirmalPatel-02/PitchGrill/issues)
 
-<!-- Replace the # links above with your real Netlify URL, a short demo video/GIF link, and your GitHub Issues URL -->
 
 ![Status](https://img.shields.io/badge/status-live-brightgreen)
 ![Python](https://img.shields.io/badge/python-3.11-blue)
@@ -21,8 +20,7 @@ PitchGrill is a multi-persona agentic system where you pitch a startup idea and 
 <br>
 
 <div align="center">
-  <!-- Drop a hero screenshot or GIF of the live Grill screen (voice orb + question) here -->
-  <img src="docs/screenshots/hero.png" alt="PitchGrill live session screenshot" width="800">
+  <img src="docs/images/session.png" alt="PitchGrill live session screenshot" width="800">
 </div>
 
 <br>
@@ -52,7 +50,7 @@ PitchGrill is a multi-persona agentic system where you pitch a startup idea and 
 
 ## 🎯 Overview
 
-PitchGrill isn't a chatbot wrapper  it's a stateful, multi-node agentic pipeline built on LangGraph, backed by a full-stack product (FastAPI, MySQL, React) with real authentication, persistence, and a live voice interface. You submit a pitch once; the system runs an entire multi-round investor grilling session end to end, with the agent deciding  turn by turn  which persona speaks, whether a claim needs verifying, and how to score what you said.
+PitchGrill isn't a chatbot wrapper. it's a stateful, multi-node(8 node) agentic pipeline built on LangGraph, backed by a full-stack product (FastAPI, MySQL, React) with real authentication, persistence, and a live voice interface. You submit a business pitch once; the system runs an entire multi-round investor grilling session end to end, with the agent deciding  turn by turn  which persona speaks, whether a claim needs verifying, and how to score what you said.
 
 This is not a demo that only works with a script. Every session is generated fresh from whatever you actually type or say.
 
@@ -60,21 +58,19 @@ This is not a demo that only works with a script. Every session is generated fre
 
 ## 💡 Why This Exists
 
-Pitch practice is usually either a friend who's too polite to push back, or a real investor meeting where you only get one real shot. PitchGrill sits in between: a low-stakes way to get genuinely grilled  hard, repeatedly, with your specific claims checked  before it actually matters.
+Pitch practice is usually either a friend who's too polite to push back, or a real investor meeting where you only get one real shot. PitchGrill sits in between those two : basicaly a low-stakes way to get genuinely grilled hard, repeatedly, with your specific claims checked before it actually matters.
 
 ---
 
 ## 📸 Screenshots
 
-<!-- Fill these in with real screenshots once you have them. Recommended: 1200px wide, PNG. -->
-
 | Grill Session | Results & Panel Verdict |
 |---|---|
-| ![Grill session](docs/screenshots/grill-session.png) | ![Results](docs/screenshots/results.png) |
+| ![Grill session](docs/images/live_session.png) | ![Results](docs/images/result_card.png) |
 
 | History | Sign Up / OTP Verification |
 |---|---|
-| ![History](docs/screenshots/history.png) | ![OTP](docs/screenshots/otp.png) |
+| ![History](docs/screenshots/history.png) | ![OTP](docs/screenshots/varify_otp.png) |
 
 ---
 
@@ -183,7 +179,7 @@ A static Q&A script can't do what a real investor does: react to what you just s
 They're answering two different kinds of questions. The fact-checker verifies *external, searchable* claims. The evaluator judges the *quality of the answer itself*  including answers that are perfectly true but vague, or well-phrased non-answers. Conflating the two would mean one LLM call juggling incompatible jobs at once.
 
 **Why the guardrail is a separate node instead of a prompt instruction.**
-A prompt-level "please don't fall for injection attempts" instruction is best-effort at best. A dedicated node with a structured `is_safe` output, checked *before* any downstream node trusts the input, is an actual gate  and if it fails closed, the session degrades to a forced low score instead of silently misbehaving.
+A prompt-level "please don't fall for injection attempts" instruction is best-effort at best. A dedicated node with a structured `is_safe` output, checked *before* any downstream node trusts the input, is an actual gate and if it fails closed, the session degrades to a forced low score instead of silently misbehaving.
 
 **Why the fact-checker defaults to "unverifiable" instead of guessing.**
 An early version of this system misread "your number beats a generic industry benchmark" as evidence the number was *false*  a real bug, caught and fixed. The corrected logic only marks a claim "refuted" when there's *direct* evidence contradicting it; a company simply outperforming an average is not proof of a lie.
@@ -214,8 +210,7 @@ Run it yourself: `python eval/evaluate_claim_detector.py`
 
 **Observability.** Every node is instrumented with LangSmith `@traceable`  full per-node latency and token-cost visibility during development and in production.
 
-<!-- Optional: drop a LangSmith dashboard screenshot here showing trace count / latency / cost -->
-<!-- ![LangSmith traces](docs/screenshots/langsmith.png) -->
+![LangSmith traces](docs/screenshots/langsmith.png)
 
 ---
 
@@ -224,7 +219,7 @@ Run it yourself: `python eval/evaluate_claim_detector.py`
 | Layer | Technology |
 |---|---|
 | **Agent Orchestration** | LangGraph, LangChain |
-| **LLM** | Groq API  `openai/gpt-oss-20b` (persona dialogue), `openai/gpt-oss-120b` (structured reasoning: claims, fact-checks, evaluation, guardrail) |
+| **LLM** | Groq API  `llama-3.1-8b-instant` (persona dialogue), `llama-3.3-70b-versatile` (structured reasoning: claims, fact-checks, evaluation, guardrail) |
 | **Search Tool** | Tavily |
 | **Observability** | LangSmith |
 | **Backend** | Python, FastAPI, SQLAlchemy |
@@ -291,9 +286,9 @@ PitchGrill/
 ├── backend/
 │   ├── app/
 │   │   ├── agents/
-│   │   │   ├── graph.py          # The full LangGraph agent
-│   │   │   └── llm.py            # Model configuration
-│   │   ├── core/                 # Config, database, security
+│   │   │   ├── graph.py           # My main agent code is here (I keep all 8 node here)
+│   │   │   └── llm.py           
+│   │   ├── core/                  #I added Config, database, security so this contain multipal files if anyone want to see.
 │   │   ├── models/                # SQLAlchemy models
 │   │   ├── repositories/          # Data access layer
 │   │   ├── routers/               # auth, sessions
@@ -321,10 +316,11 @@ PitchGrill/
 
 ```bash
 cd backend
-python -m venv .venv
-.venv\Scripts\activate        # Windows
+uv init #(uv must be installed on your pc to use it)
+uv venv
+.venv\Scripts\activate        
 pip install -r requirements.txt
-cp .env.example .env          # fill in real values, see below
+cp .env        
 uvicorn app.main:app --reload
 ```
 
@@ -333,7 +329,7 @@ uvicorn app.main:app --reload
 ```bash
 cd frontend
 npm install
-cp .env.example .env          # set VITE_API_BASE_URL
+cp .env  
 npm run dev
 ```
 
@@ -354,7 +350,6 @@ The backend runs at `http://127.0.0.1:8000` (interactive docs at `/docs`), the f
 | `TAVILY_API_KEY` | Web search tool |
 | `BREVO_API_KEY`, `BREVO_SENDER_EMAIL` | Email OTP delivery |
 | `LANGSMITH_API_KEY`, `LANGSMITH_PROJECT` | Tracing (optional but recommended) |
-| `MAX_SESSIONS_PER_USER` | Per-account session cap |
 
 **Frontend `.env`:**
 
@@ -371,8 +366,8 @@ The backend runs at `http://127.0.0.1:8000` (interactive docs at `/docs`), the f
 Stated plainly, because pretending they don't exist is worse than naming them:
 
 - **Session resume relies on a local SQLite checkpoint file.** On the free Hugging Face Spaces tier, this file doesn't survive a container restart  an in-progress session can lose its "where was I paused" state if the backend restarts mid-conversation. The underlying pitch/transcript/score data is always safe in TiDB; only the pause-point itself can be lost. A MySQL-backed checkpointer was attempted and reverted after confirming a real SQL-syntax incompatibility with both TiDB and local MariaDB.
-- **The fundability signal (a separate, standalone ML experiment)** was intentionally **not** integrated into the live product. See [`/ml-experiment`](#) for the full writeup  a supervised model trained on real Shark Tank outcome data, with honest reporting of a modest AUROC (~0.60) and the reasoning for not shipping it as a displayed confidence score.
-- **Voice input is Chrome/Edge-only** by browser API support  Brave blocks it by design, Firefox/Safari don't implement it. Typing always works as a fallback everywhere.
+- **The fundability signal (a separate, standalone ML experiment)** was intentionally **not** integrated into the live product. See [`/ml-experiment`](https://www.kaggle.com/code/nirmalpatel02/can-we-predict-will-get-deal-with-this-data) for the full writeup  a supervised model trained on real Shark Tank outcome data, with honest reporting of a modest AUROC (~0.60) and the reasoning for not shipping it as a displayed confidence score.
+- **Voice input is Chrome only** by browser API support  Brave blocks it by design, Firefox/Safari don't implement it. Typing always works as a fallback everywhere.
 
 ---
 
@@ -393,6 +388,6 @@ MIT see [LICENSE](LICENSE).
 
 <div align="center">
 
-Built by [Nirmal Patel](https://github.com/) · [LinkedIn](#) · [Portfolio](#)
+Built by [Nirmal Patel](https://github.com/NirmalPatel-02) · [LinkedIn](https://www.linkedin.com/in/nirmal-patel-184500251/) · [Portfolio](#)
 
 </div>
