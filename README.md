@@ -388,6 +388,6 @@ MIT see [LICENSE](LICENSE).
 
 <div align="center">
 
-Built by [Nirmal Patel](https://github.com/NirmalPatel-02) · [LinkedIn](https://www.linkedin.com/in/nirmal-patel-184500251/) · [Portfolio](#)
+Built by [Nirmal Patel](https://github.com/NirmalPatel-02) · [LinkedIn](https://www.linkedin.com/in/nirmal-patel-184500251/) · [Kaggle](https://www.kaggle.com/nirmalpatel02) ·  [Portfolio](#)
 
 </div>
