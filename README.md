@@ -70,7 +70,7 @@ Pitch practice is usually either a friend who's too polite to push back, or a re
 
 | History | Sign Up / OTP Verification |
 |---|---|
-| ![History](docs/screenshots/history.png) | ![OTP](docs/screenshots/varify_otp.png) |
+| ![History](docs/images/history.png) | ![OTP](docs/images/varify_otp.png) |
 
 ---
 
@@ -210,7 +210,7 @@ Run it yourself: `python eval/evaluate_claim_detector.py`
 
 **Observability.** Every node is instrumented with LangSmith `@traceable`  full per-node latency and token-cost visibility during development and in production.
 
-![LangSmith traces](docs/screenshots/langsmith.png)
+![LangSmith traces](docs/images/langsmith_obs.png)
 
 ---
 
