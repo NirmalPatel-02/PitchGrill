@@ -6,7 +6,7 @@
 
 PitchGrill is a multi-persona agentic system where you pitch a startup idea and get grilled by three distinct AI investor personas in real time. They ask genuine follow-up questions based on what you actually said, verify your factual claims against live web search, and score your answers against a structured rubric closing with a panel verdict you can put in front of anyone.
 
-[**🚀 Live Demo**](https://pitchgrill.netlify.app/) · [**🎥 Demo Video**](docs/videos/PitchGrill%20Demo%20Vid.mp4) · [**📄 Report a Bug**](https://github.com/NirmalPatel-02/PitchGrill/issues)
+[**🚀 Live Demo**](https://pitchgrill.netlify.app/) · [**🎥 Demo Video**](https://drive.google.com/file/d/1e8xhj5YNNLfS3KQb355wti0z8uIXunHk/view?usp=sharing) · [**📄 Report a Bug**](https://github.com/NirmalPatel-02/PitchGrill/issues)
 
 
 ![Status](https://img.shields.io/badge/status-live-brightgreen)
